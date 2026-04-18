@@ -1,6 +1,6 @@
 const room = 'bedroom';
 const timeOfDay = 7;
-let sensorTemp = null;
+const sensorTemp = null;
 
 
 let energy = 10;
