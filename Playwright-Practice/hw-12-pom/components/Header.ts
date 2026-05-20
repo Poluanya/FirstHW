@@ -16,4 +16,8 @@ export class Header {
     }
     return '0';
   }
+
+  async clickCartIcon(): Promise<void> {
+    await this.cartIcon.click();
+  }
 }
