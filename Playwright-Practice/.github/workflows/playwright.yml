@@ -4,6 +4,7 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+    workflow_dispatch:
   schedule:
     # Запуск каждый день в полночь. ВНИМАНИЕ: время в cron указывается по UTC!
     # Примечание: GitHub не гарантирует запуск минута в минуту и может стартовать с задержкой.
