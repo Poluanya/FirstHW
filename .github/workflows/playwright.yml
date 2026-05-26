@@ -1,0 +1,73 @@
+name: Playwright Tests
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Запуск каждый день в полночь. ВНИМАНИЕ: время в cron указывается по UTC!
+    # Примечание: GitHub не гарантирует запуск минута в минуту и может стартовать с задержкой.
+    - cron: '0 0 * * *'
+
+# Даем права пайплайну на запись, чтобы он мог публиковать сайт
+permissions:
+  contents: write
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+
+      # Настраиваем Node.js и кэшируем npm зависимости для ускорения CI
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+          cache-dependency-path: 'Playwright-Practice/package-lock.json'
+
+      # Установка зависимостей с указанием рабочей директории
+      - name: Install dependencies
+        run: npm ci
+        working-directory: Playwright-Practice
+
+      # Установка браузеров внутри нужной папки
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        working-directory: Playwright-Practice
+
+      # Запуск конкретного браузера из матрицы
+      - name: Run Playwright tests
+        run: npx playwright test --project=${{ matrix.browser }}
+        working-directory: Playwright-Practice
+
+      # Сохраняем базовый HTML-отчет (делаем уникальные имена для каждого браузера)
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: Playwright-Practice/playwright-report
+          retention-days: 10
+
+      # Генерируем Allure отчет с правильными путями к результатам
+      - name: Generate Allure Report
+        uses: simple-elf/allure-report-action@v1.9
+        if: always()
+        with:
+          allure_results: Playwright-Practice/allure-results
+          allure_history: Playwright-Practice/allure-history
+
+      # Публикуем статичный сайт на GitHub Pages
+      - name: Deploy Allure to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: Playwright-Practice/allure-history
